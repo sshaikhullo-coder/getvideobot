@@ -402,6 +402,7 @@ for _ in range(5):
 # ================== ОБРАБОТЧИКИ КОМАНД ==================
 @bot.message_handler(commands=['start'])
 @log_action
+@check_ban
 def start(message):
     register_user(message.from_user)
     update_stats('total_users')
@@ -478,7 +479,26 @@ def admin_panel(message):
 
 
 
+@bot.message_handler(commands=['stats'])
+@admin_only
+def stats(message):
+    with db_lock:
+        total_users = cursor.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        total_dls = cursor.execute("SELECT value FROM stats WHERE key='total_downloads'").fetchone()
+        total_dls = total_dls[0] if total_dls else 0
+        users = cursor.execute("SELECT id, username, first_name, downloads FROM users ORDER BY downloads DESC LIMIT 50").fetchall()
 
+    text = f"📊 Статистика (админ):\n👥 Колдонуучулар: {total_users}\n📥 Жүктөөлөр: {total_dls}\n\n"
+
+    if users:
+        text += "👥 Активдүү колдонуучулар (топ 50):\n"
+        for i, (uid, uname, fname, dls) in enumerate(users, 1):
+            uname = f"@{uname}" if uname else "жок"
+            text += f"{i}. {fname} ({uname}) | 🆔 {uid} – 📥 {dls} жүктөө\n"
+    else:
+        text += "Колдонуучулар жок."
+
+    bot.send_message(message.chat.id, text)
 
 
 
@@ -524,7 +544,7 @@ def ban_user(message):
         with db_lock:
             cursor.execute("UPDATE users SET banned=1 WHERE id=?", (user_id,))
             conn.commit()
-        bot.reply_to(message, f"🚫 Пользователь {user_id} забанен.")
+        bot.reply_to(message, f"🚫 Колдонуулучу {user_id} чектетилди.")
     except:
         bot.reply_to(message, "❌ Формат: /ban <user_id>")
 
@@ -543,7 +563,7 @@ def unban_user(message):
         with db_lock:
             cursor.execute("UPDATE users SET banned=0 WHERE id=?", (user_id,))
             conn.commit()
-        bot.reply_to(message, f"✅ Пользователь {user_id} разбанен.")
+        bot.reply_to(message, f"✅ Колдонуулучу {user_id} чектетилди.")
     except:
         bot.reply_to(message, "❌ Формат: /unban <user_id>")
 
@@ -612,6 +632,7 @@ def search_youtube(message):
 @bot.message_handler(func=lambda m: is_valid_url(m.text))
 @rate_limit
 @log_action
+@check_ban
 def auto_download(message):
     url = message.text.strip()
     bot.reply_to(message, "⏳ Автоматтык жүктөө башталды (видео)...")
@@ -671,6 +692,7 @@ def menu_thumbnail(message):
     bot.reply_to(message, "Видеонун сүрөтүн (thumbnail) алуу үчүн /thumb <ссылка> колдонуңуз.")
 
 @bot.message_handler(func=lambda m: m.text == "ℹ️ Бот жөнүндө")
+@check_ban
 def about(message):
     text = """
 🤖 **SUPER DOWNLOADER BOT**
