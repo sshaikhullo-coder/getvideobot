@@ -1,3 +1,26 @@
+
+import telebot
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
+import yt_dlp
+import os
+import re
+import logging
+import threading
+import queue
+import time
+import requests
+from urllib.parse import urlparse
+from datetime import datetime, date
+import json
+import sqlite3
+from functools import wraps
+import subprocess
+import sys
+import traceback
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+import uuid
+
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 import yt_dlp
